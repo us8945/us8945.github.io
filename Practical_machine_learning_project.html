@@ -63,7 +63,7 @@ img {
 <div id="header">
 <h1 class="title">Practical Machine learning - project</h1>
 <h4 class="author"><em>Uri Smashnov</em></h4>
-<h4 class="date"><em>Thursday, March 19, 2015</em></h4>
+<h4 class="date"><em>Saturday, March 21, 2015</em></h4>
 </div>
 
 
@@ -83,7 +83,7 @@ img {
 setwd(&quot;F:/Coursera/Practical machine learning March 2015 Cert/Project&quot;)
 training = read.csv(&quot;pml-training.csv&quot;)
 testing = read.csv(&quot;pml-testing.csv&quot;)</code></pre>
-<p>The training data set has 19622 records with 160 parameters. Many of the parameters did not have data populated in the majority of the columns. I have automatically removed columns with NA present in at least 97% of the cases. Next I have removed columns associated with record numbering, user name and time/time window. It is especially important to remove num-window variable, because of unique relationship between num_window and classe. Num-window will be very effective for use in validation sub-set of the data, however will have no value in trying to predict outcome using any other than “training” data set. After the clean-up we have left with 52 variables.</p>
+<p>The training data set has 19,622 records with 160 parameters. Many of the parameters did not have data populated in the majority of the records. I have automatically removed columns with NA present in at least 97% of the cases. Next I have removed columns associated with record numbering, user name and time/time window. It is especially important to remove num-window variable, because of unique relationship between num_window and classe. Num-window will be very effective for use in validation sub-set of the data, however will have no value in trying to predict outcome using any other than “training” data set. After the clean-up we have left with 52 variables.</p>
 <pre class="r"><code>NAIndex &lt;- unique(c(which(colSums(is.na(training))&gt;0.97), which(colSums(training ==&quot;&quot;)&gt;nrow(training)*0.97)))
 training1 &lt;- data.frame(training[,-NAIndex])
 training1$X = NULL
@@ -116,15 +116,15 @@ load(&quot;modFit_rf_small_sample.save&quot;)
 pred &lt;- predict(modFit, newdata=testing3)
 confusionMatrix(pred, testing3$classe)$overall[1] #Accuracy of prediction on validation set</code></pre>
 <pre><code>##  Accuracy 
-## 0.9539019</code></pre>
+## 0.9534489</code></pre>
 <pre class="r"><code>confusionMatrix(pred, testing3$classe)$table #Confusion matrix</code></pre>
 <pre><code>##           Reference
 ## Prediction    A    B    C    D    E
-##          A 4975  141   12    6    3
-##          B   15 3154  128   19   39
-##          C   19   95 2883  105   70
-##          D   11   15   47 2750   52
-##          E    2   12    9   14 3082</code></pre>
+##          A 4975  141   10    6    3
+##          B   18 3153  126   15   40
+##          C   17   94 2887  104   75
+##          D   10   15   47 2750   57
+##          E    2   14    9   19 3071</code></pre>
 <blockquote>
 <p>Predicting with Boosting model using 10% of population selected randomly</p>
 </blockquote>
@@ -134,16 +134,16 @@ load(&quot;modFit1_gbm_small_sample.save&quot;)
 #save(modFit1,file=&quot;modFit1_gbm_small_sample.save&quot;)
 pred1 &lt;- predict(modFit1, newdata=testing3)
 confusionMatrix(pred1, testing3$classe)$overall[1] #Accuracy of prediction on validation set</code></pre>
-<pre><code>##  Accuracy 
-## 0.9300034</code></pre>
+<pre><code>## Accuracy 
+## 0.930683</code></pre>
 <pre class="r"><code>confusionMatrix(pred1, testing3$classe)$table #Confusion matrix</code></pre>
 <pre><code>##           Reference
 ## Prediction    A    B    C    D    E
-##          A 4906  237    2   13   25
-##          B   67 3009  154   60   48
-##          C   12  120 2810  178   31
-##          D   31   35   98 2607   52
-##          E    6   16   15   36 3090</code></pre>
+##          A 4905  240    1   11   27
+##          B   68 3015  154   54   50
+##          C   11  117 2817  178   33
+##          D   32   28   91 2611   50
+##          E    6   17   16   40 3086</code></pre>
 </div>
 <div id="cross-validation" class="section level3">
 <h3><strong>Cross-Validation</strong></h3>
@@ -208,18 +208,18 @@ modFit7</code></pre>
 </blockquote>
 <pre class="r"><code>confusionMatrix(pred, testing6$classe)$overall[1] </code></pre>
 <pre><code>##  Accuracy 
-## 0.9981308</code></pre>
+## 0.9969414</code></pre>
 <blockquote>
 <p>Confusion matrix</p>
 </blockquote>
 <pre class="r"><code>confusionMatrix(pred, testing6$classe)$table </code></pre>
 <pre><code>##           Reference
 ## Prediction    A    B    C    D    E
-##          A 1674    1    0    0    0
-##          B    0 1137    1    0    0
-##          C    0    1 1025    3    2
-##          D    0    0    0  960    2
-##          E    0    0    0    1 1078</code></pre>
+##          A 1673    3    0    0    0
+##          B    1 1133    2    1    0
+##          C    0    3 1021    2    1
+##          D    0    0    3  960    1
+##          E    0    0    0    1 1080</code></pre>
 </div>
 <div id="conclusion" class="section level3">
 <h3><strong>Conclusion</strong></h3>

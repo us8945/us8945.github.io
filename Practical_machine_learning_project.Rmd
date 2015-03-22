@@ -32,7 +32,7 @@ training = read.csv("pml-training.csv")
 testing = read.csv("pml-testing.csv")
 ```
 
-The training data set has 19622 records with 160 parameters. Many of the parameters did not have data populated in the majority of the columns. I have automatically removed columns with NA present in at least 97% of the cases.
+The training data set has 19,622 records with 160 parameters. Many of the parameters did not have data populated in the majority of the records. I have automatically removed columns with NA present in at least 97% of the cases.
 Next I have removed columns associated with record numbering, user name and time/time window. It is especially important to remove
 num-window variable, because of unique relationship between num_window and classe. 
 Num-window will be very effective for use in validation sub-set of the data, however will have no value in trying to predict outcome using any other than "training" data set. After the clean-up we have left with 52 variables.
