@@ -1,0 +1,134 @@
+---
+title: "Practical Machine learning - project"
+author: "Uri Smashnov"
+date: "Saturday, March 21, 2015"
+output: 
+    html_document:
+          pandoc_args: ["+RTS", "-K64m","-RTS"]
+---
+
+**Executive Summary**
+===
+
+The goal of the project is to predict the manner in people perform certain weight lifting exercise by looking into data collected by various sensor attached to the person's body and to the weightlifting equipment.
+In our particular case researches used light dumbbell exercise and collected data in highly controlled settings on a right way to perform exercise, as well as predestined incorrect ways to perform the exercise. 
+
+The data set and explanation of the set-up can be found in the following link <http://groupware.les.inf.puc-rio.br/har>.
+The following paper provides insight on the research <http://groupware.les.inf.puc-rio.br/public/papers/2013.Velloso.QAR-WLE.pdf>, and conclusions about future abilities to monitor athlete's performance and provide "automated" feedback.
+
+The goal of the project is to build predictive model that would predict way (classe variable in the data-set) in which activity was performed.
+
+### **Data pre-processing**
+
+First the data was downloaded from Coursera class website and loaded into R. 
+
+
+```{r cache = FALSE, echo=TRUE, warning=FALSE}
+library(caret)
+library(ggplot2)
+
+setwd("F:/Coursera/Practical machine learning March 2015 Cert/Project")
+training = read.csv("pml-training.csv")
+testing = read.csv("pml-testing.csv")
+```
+
+The training data set has 19622 records with 160 parameters. Many of the parameters did not have data populated in the majority of the columns. I have automatically removed columns with NA present in at least 97% of the cases.
+Next I have removed columns associated with record numbering, user name and time/time window. It is especially important to remove
+num-window variable, because of unique relationship between num_window and classe. 
+Num-window will be very effective for use in validation sub-set of the data, however will have no value in trying to predict outcome using any other than "training" data set. After the clean-up we have left with 52 variables.
+
+```{r cache = FALSE, echo=TRUE, warning=FALSE}
+NAIndex <- unique(c(which(colSums(is.na(training))>0.97), which(colSums(training =="")>nrow(training)*0.97)))
+training1 <- data.frame(training[,-NAIndex])
+training1$X = NULL
+training1$user_name = NULL
+training1$raw_timestamp_part_1 = NULL
+training1$raw_timestamp_part_2 = NULL
+training1$cvtd_timestamp = NULL
+training1$num_window = NULL # if left provides false sense of model credibility
+training1$new_window = NULL
+```
+
+### **Model selection**
+
+For the model selection I have considered two potential models: 
+-Random forest 
+-Boosting 
+In order to test models and get results relatively quickly, I have extracted random sample of 10% of the records from traing set. I have also used the sub-set to test for cross-validation parameters to be used with caret train function.
+Random Forest and Boosting have produced similar Accuracy results. 
+Random Forest accuracy was 94.5% and Bossing accuracy was 93% when tested against validation data set.
+The performance for both with relatively good when using modified cross-validation parameters. I have used K-fold cross-validation (method="repeatedcv") with number=5 and repeats=5 .
+
+```{r cache = FALSE, echo=TRUE, warning=FALSE,message=FALSE}
+fitControl = trainControl(
+    method = "repeatedcv",
+    number = 5, ## 5-fold Cross-validation
+    repeats = 5) ## repeated 5 times
+
+training1 = training1[sample(nrow(training1)),] #randomly reorder records
+inTrain = createDataPartition(y=training1$classe,p=0.1, list=FALSE)
+training3 = training1[inTrain,] #produce sub-set for faster model training
+testing3 = training1[-inTrain,] #produce sub-set for model validation
+```
+
+>Predicting with Random Forest model using 10% of population selected randomly 
+```{r cache = FALSE, echo=TRUE, warning=FALSE,message=FALSE}
+# modFit = train(classe~ .,data=training3,method="rf",trControl = fitControl,prox=TRUE)
+setwd("F:/Coursera/Practical machine learning March 2015 Cert/Project")
+load("modFit_rf_small_sample.save")
+# save(modFit,file="modFit_rf_small_sample.save")
+pred <- predict(modFit, newdata=testing3)
+confusionMatrix(pred, testing3$classe)$overall[1] #Accuracy of prediction on validation set
+confusionMatrix(pred, testing3$classe)$table #Confusion matrix
+```
+
+>Predicting with Boosting model using 10% of population selected randomly
+```{r cache = FALSE, echo=TRUE, warning=FALSE,message=FALSE}
+# modFit1 = train(classe ~ ., method="gbm",data=training3,trControl = fitControl,verbose=FALSE)
+setwd("F:/Coursera/Practical machine learning March 2015 Cert/Project")
+load("modFit1_gbm_small_sample.save")
+#save(modFit1,file="modFit1_gbm_small_sample.save")
+pred1 <- predict(modFit1, newdata=testing3)
+confusionMatrix(pred1, testing3$classe)$overall[1] #Accuracy of prediction on validation set
+confusionMatrix(pred1, testing3$classe)$table #Confusion matrix
+```
+### **Cross-Validation**
+I'm using cross-validation built-into the train function of caret package. In final model I have used K-fold cross-validation (method="repeatedcv") with number=5 and repeats=5 .
+
+### **Final Model**
+After re-running modeling on 70% traing set, Random Forest model had accuracy of above 99.7% while Boosting model had accuracy
+of 96.9%. It could be that with increases cross-validation Boosting would improve, however I had to consider performance implications of increased cross-validation.
+
+I have used "snow" library to enable parallel computing to improve on the execution time.
+```{r cache = FALSE, echo=TRUE, warning=FALSE,message=FALSE}
+inTrain = createDataPartition(y=training1$classe,
+                              p=0.7, list=FALSE)
+training6 = training1[inTrain,]
+testing6 = training1[-inTrain,]
+library(snow)
+cl= makeCluster(4,type="SOCK")    
+#modFit7 = train(classe~ .,data=training6,method="rf",trControl = fitControl,prox=TRUE)
+stopCluster(cl)
+#save(modFit7,file="modFit7_rf_full_sample.save")
+setwd("F:/Coursera/Practical machine learning March 2015 Cert/Project")
+load("modFit7_rf_full_sample.save")
+
+modFit7
+modFit7$finalModel
+pred <- predict(modFit7, newdata=testing6)
+```
+>Accuracy of prediction on validation set
+```{r cache = FALSE, echo=TRUE, warning=FALSE,message=FALSE}
+confusionMatrix(pred, testing6$classe)$overall[1] 
+```
+
+>Confusion matrix
+```{r cache = FALSE, echo=TRUE, warning=FALSE,message=FALSE}
+confusionMatrix(pred, testing6$classe)$table 
+```
+### **Conclusion**
+Random Forest model built 52 variables seems to perform really well on validation and testing data sets. The split used for the project was 70% training set and 30% validation set. It possible to improve model training time by father reducing number of variables with small reduction in the accuracy of the model.
+Out of sample error calculated on validation data set was 0.17%.
+True expected Out of sample error would be higher due to the problem of over-fitting as well as because of the nature of the experiment.
+
+
